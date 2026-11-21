@@ -6,6 +6,7 @@ const { validateAcademicPost, publicAcademicPost } = require('../db/academic');
 function createAcademicRouter(collection) {
   const router = express.Router();
   router.get('/', async (req, res) => {
+    // Jharshini - I like that you added the page check to catch invalid pages
     const page = Number(req.query.page || 1);
     if (!Number.isInteger(page) || page < 1 || page > 10000) {
       return res.status(400).json({ error: 'page must be an integer from 1 to 10000' });
@@ -23,11 +24,14 @@ function createAcademicRouter(collection) {
       if (field === 'keyword') {
         const pattern = new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
         query.$or = ['title', 'body', 'tips', 'courseCode'].map((key) => ({ [key]: pattern }));
-      } else {
+      } else { // Jharshini - one suggestion, since the course code filter has to match exactly
+        // it would be better to strip spaces before saving and searching
         query[field] = field === 'courseCode' ? value.toUpperCase() : value;
       }
     }
-    const pageSize = 20;
+    const pageSize = 20; // Jharshini - suggestion, this should be added as a constant at the top of the file to make 
+    // it easier to find and modify
+    // Jharshini - I like taht you run find and countDocuments together with Promise.all
     const [posts, total] = await Promise.all([
       collection
         .find(query)
@@ -67,6 +71,8 @@ function createAcademicRouter(collection) {
     return res.json(publicAcademicPost(post));
   });
 
+  // Jharshini - not sure if this is intentional or not, but it looks like authorId checks are duplicated
+  // here and in findOneUpdate
   async function requireOwner(req, res, next) {
     const post = await collection.findOne({ _id: req.postId });
     if (!post) return res.status(404).json({ error: 'Post not found' });
